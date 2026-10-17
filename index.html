@@ -114,11 +114,11 @@ code{background:#14100c;padding:2px 6px;border-radius:4px;font-size:14px}
 <div id="audiobar">
 <label class="filebtn" id="apLoadBtn">🎧 Load MP3 <input type="file" id="mp3" accept="audio/*" hidden></label>
 <div id="aplayer" hidden>
+<button id="apX" aria-label="Unload audio" title="Unload audio">Unload</button>
 <button id="apPlay" aria-label="Play or pause audio">▶</button>
 <span id="apCur">0:00</span>
 <input type="range" id="apScrub" min="0" max="1000" value="0" aria-label="Scrub audio">
 <span id="apDur">0:00</span>
-<button id="apX" aria-label="Unload audio" title="Unload audio">✕</button>
 </div>
 <audio id="player"></audio>
 </div>
@@ -138,7 +138,7 @@ code{background:#14100c;padding:2px 6px;border-radius:4px;font-size:14px}
 <button class="action" id="exportReadable" style="background:transparent">📄 Readable summary</button>
 </div>
 </header>
-<div class="view active" id="view-director"><p class="hint">Left: scene + script + script notes. Right: image + prompt + image notes. Tap an image to enlarge.</p><section class="beat" id="dbeat-B01"><div class="beat-head"><span class="beat-num">#1</span><span class="sid">B01</span><span class="beat-title">Cold open — Twenty-one years old</span><span class="beat-time">⏱ 0:00</span><button class="playbtn" data-secs="0">▶ preview</button><button class="sbtn" title="Strikethrough selected text">S</button><span class="scenetools"><button class="stool" data-op="up" title="Move scene up">↑</button><button class="stool" data-op="down" title="Move scene down">↓</button><button class="stool" data-op="split" title="Split scene at cursor">✂️</button><button class="stool" data-op="add" title="Add scene after this">＋</button><button class="stool" data-op="del" title="Delete scene">🗑</button></span></div><div class="cols"><div><div class="speaker">SCRIPT</div><div class="ed " contenteditable="true" data-beat="B01" data-field="vo">[CHEF] Imagine it's the sixties. And you are 21 years old... and you help Charles Manson murder seven people over a weekend.</div><label class="note-label">📝 Script notes / change requests</label><div class="ed note" contenteditable="true" data-beat="B01" data-field="scriptnote" data-ph="Script changes, delivery notes…"></div></div><div><figure data-img="host-1.jpg">
+<div class="view active" id="view-director"><p class="hint">Left: scene + script + script notes. Right: image + prompt + image notes. Tap an image to enlarge. <span class="histbtns"><button id="histUndo" class="action" title="Undo last scene change">↶ Undo</button><button id="histRedo" class="action" title="Redo">↷ Redo</button></span></p><section class="beat" id="dbeat-B01"><div class="beat-head"><span class="beat-num">#1</span><span class="sid">B01</span><span class="beat-title">Cold open — Twenty-one years old</span><span class="beat-time">⏱ 0:00</span><button class="playbtn" data-secs="0">▶ preview</button><button class="sbtn" title="Strikethrough selected text">S</button><span class="scenetools"><button class="stool" data-op="up" title="Move scene up">↑</button><button class="stool" data-op="down" title="Move scene down">↓</button><button class="stool" data-op="split" title="Split scene at cursor">✂️</button><button class="stool" data-op="add" title="Add scene after this">＋</button><button class="stool" data-op="del" title="Delete scene">🗑</button></span></div><div class="cols"><div><div class="speaker">SCRIPT</div><div class="ed " contenteditable="true" data-beat="B01" data-field="vo">[CHEF] Imagine it's the sixties. And you are 21 years old... and you help Charles Manson murder seven people over a weekend.</div><label class="note-label">📝 Script notes / change requests</label><div class="ed note" contenteditable="true" data-beat="B01" data-field="scriptnote" data-ph="Script changes, delivery notes…"></div></div><div><figure data-img="host-1.jpg">
 <img src="img/host-1.jpg" alt="host-1.jpg" data-full="img/host-1.jpg">
 <figcaption>host-1.jpg</figcaption>
 <details><summary>📝 Generation prompt: Talking head — Chef on camera (placeholder)</summary>
@@ -897,7 +897,7 @@ code{background:#14100c;padding:2px 6px;border-radius:4px;font-size:14px}
 <button id="lbPrev" class="lbNav" aria-label="Previous image">‹</button>
 <button id="lbNext" class="lbNav" aria-label="Next image">›</button></div>
 <div id="lbCap"></div>
-<div id="lbTransport"><button id="lbPlay" class="action">▶ Auto-play</button><div id="lbProgWrap"><div id="lbProg"></div></div></div><div id="lbSwapRow"><label class="filebtn">🔄 Swap image <input type="file" id="lbSwap" accept="image/*" hidden></label></div>
+<div id="lbTransport"><button id="lbPlay" class="action">▶ Auto-play</button><button id="lbReplay" class="action" title="Replay current scene from its start">↺ Replay</button><div id="lbProgWrap"><div id="lbProg"></div></div></div><div id="lbSwapRow"><label class="filebtn">🔄 Swap image <input type="file" id="lbSwap" accept="image/*" hidden></label></div>
 <div id="lbBody"></div></div></div>
 <div class="exportbar"><button class="action" id="exportBtn2" style="font-size:19px;padding:14px 28px">⬇ Export review package</button>
 <button class="action" id="exportReadable2" style="font-size:19px;padding:14px 28px;background:transparent">📄 Readable summary</button>
@@ -1126,7 +1126,7 @@ function beatAtSecs(t){
 // ===== Synced preview: slideshow + read-through audio, beat-locked =====
 // The audio clock drives the slides. Scrubbing the audio jumps the preview.
 let slideTimer = null, slidePausedSid = null, audioDrive = false;
-let previewBeats = [], previewIdx = 0;
+let previewBeats = [], previewIdx = 0, pausedAt = null, slidePlaying = false;
 
 function audioOk() {
   return !!(player && player.src && player.duration &&
@@ -1149,7 +1149,9 @@ function buildPreview() {
 function stopSlide() {
   if (slideTimer) { clearTimeout(slideTimer); slideTimer = null; }
   slidePausedSid = null;
+  pausedAt = null;
   audioDrive = false;
+  slidePlaying = false;
   const pb = document.getElementById('lbPlay');
   if (pb) pb.textContent = '▶ Auto-play';
 }
@@ -1193,7 +1195,7 @@ function startSlide(fromSid) {
     const fi = previewBeats.findIndex(b => b.sid === want);
     if (fi >= 0) i = fi;
   }
-  lastSlideSid = null; slidePausedSid = null;
+  lastSlideSid = null; slidePausedSid = null; pausedAt = null; slidePlaying = true;
   document.getElementById('lbPlay').textContent = '⏸ Pause';
   audioDrive = audioOk();
   const b = previewBeats[i];
@@ -1214,21 +1216,58 @@ function startSlide(fromSid) {
 
 function pauseSlide() {
   if (slideTimer) { clearTimeout(slideTimer); slideTimer = null; }
-  if (audioDrive && player) player.pause();
+  if (audioDrive && player) {
+    pausedAt = player.currentTime;
+    player.pause();
+  }
   slidePausedSid = lb.dataset.sid;
+  slidePlaying = false;
   document.getElementById('lbPlay').textContent = '▶ Resume';
 }
 
 function resumeSlide() {
   const sid = slidePausedSid;
   slidePausedSid = null;
+  slidePlaying = true;
   document.getElementById('lbPlay').textContent = '⏸ Pause';
-  startSlide(sid);
+  if (audioDrive && player && pausedAt != null) {
+    // resume in place — no seek
+    try { player.currentTime = pausedAt; } catch (e) {}
+    pausedAt = null;
+    player.play().catch(() => {});
+    // previewIdx still points at the right beat; followAudio keeps it synced
+  } else {
+    startSlide(sid);
+  }
+}
+
+// replay the current scene from its start (separate from pause)
+function replayBeat() {
+  const b = previewBeats[previewIdx];
+  if (!b) return;
+  if (audioDrive && b.a0 != null && player) {
+    if (slideTimer) { clearTimeout(slideTimer); slideTimer = null; }
+    try { player.currentTime = b.a0; } catch (e) {}
+    player.play().catch(() => {});
+    showPreviewBeat(previewIdx);
+    slidePlaying = true;
+    document.getElementById('lbPlay').textContent = '⏸ Pause';
+  } else if (!audioDrive) {
+    // silent mode: restart the current slide's timer
+    if (slideTimer) clearTimeout(slideTimer);
+    showPreviewBeat(previewIdx);
+    slidePlaying = true;
+    document.getElementById('lbPlay').textContent = '⏸ Pause';
+    slideTimer = setTimeout(() => silentTick(previewIdx + 1), Math.max(2500, b.dur * 1000));
+  }
 }
 document.getElementById('lbPlay').addEventListener('click', () => {
-  if (slideTimer) pauseSlide();
+  if (slidePlaying) pauseSlide();
   else if (slidePausedSid) resumeSlide();
   else startSlide();
+});
+document.getElementById('lbReplay').addEventListener('click', () => {
+  replayBeat();
 });
 
 // audio clock drives the slides; scrubbing jumps the preview to the audio
@@ -1249,6 +1288,7 @@ function followAudio() {
     stopSlide();
   }
 }
+
 
 
 document.getElementById('lbPrev').addEventListener('click',e=>{e.stopPropagation();openLbAt(lbIdx-1);});
@@ -1272,6 +1312,8 @@ apScrub.addEventListener('pointerdown',()=>{apScrubbing=true;});
 window.addEventListener('pointerup',()=>{apScrubbing=false;});
 apScrub.addEventListener('input',()=>{if(player.duration)player.currentTime=apScrub.value/1000*player.duration;});
 document.getElementById('apX').addEventListener('click',()=>{
+  if(!confirm('Unload the MP3? You will need to load it again to use synced preview.'))return;
+  if(audioDrive)stopSlide();
   player.pause();player.removeAttribute('src');player.load();
   document.getElementById('aplayer').hidden=true;apCur.textContent='0:00';apDur.textContent='0:00';apScrub.value=0;
 });
@@ -1376,6 +1418,14 @@ function save(){
     const sid=sec.id.replace('dbeat-','');
     d[sid]=d[sid]||{};d[sid]['__title']=t.textContent;
   });
+  d['__order']=directorBeats().map(beatSid);
+  d['__xbeats']={};
+  directorBeats().forEach(sec=>{
+    const sid=beatSid(sec);
+    if(/^X\d+$/.test(sid)){
+      d['__xbeats'][sid]={aFrom:sec.dataset.aFrom||'',aTo:sec.dataset.aTo||''};
+    }
+  });
   try{localStorage.setItem(KEY,JSON.stringify(d));}catch(e){}
   markEdited();
 }
@@ -1409,6 +1459,16 @@ function loadInto(root){
     const sid=sec.id.replace('dbeat-','');
     const te=sec.querySelector('.beat-title');
     if(te&&d[sid]&&d[sid]['__title']!==undefined)te.textContent=d[sid]['__title'];
+  });
+  root.querySelectorAll('input.swap').forEach(inp=>{
+    const b=inp.dataset.beat,img=inp.dataset.img;
+    const k='swapped|'+img;
+    if(d[b]&&d[b][k]!==undefined){
+      inp.dataset.swapped=d[b][k];
+      const fig=inp.closest('figure');
+      const im=fig?fig.querySelector('img'):null;
+      if(im)im.src=d[b][k];
+    }
   });
 }
 function load(){loadInto(document);}
@@ -1573,11 +1633,20 @@ function directorBeats() {
 }
 function beatSid(sec) { return sec.id.replace('dbeat-', ''); }
 
+function fmtTime(sec) {
+  sec = Math.max(0, Math.round(sec));
+  return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+}
 function renumber() {
   const secs = directorBeats();
+  let t = 0;
   secs.forEach((s, i) => {
     const bn = s.querySelector('.beat-num');
     if (bn) bn.textContent = '#' + (i + 1);
+    const tt = s.querySelector('.beat-time');
+    if (tt) tt.textContent = '⏱ ' + fmtTime(t);
+    const sp = spanFor(beatSid(s));
+    t += sp ? (sp[1] - sp[0]) : 8;
   });
   SCENE_ORDER = secs.map(beatSid);
 }
@@ -1782,12 +1851,47 @@ function syncFull() {
   syncFullScript();
 }
 
-function syncAll() {
+// ---- undo/redo for scene structure ----
+let histStack = [], histIdx = -1;
+const HIST_MAX = 50;
+function pushHist() {
+  histStack = histStack.slice(0, histIdx + 1);
+  const v = document.getElementById('view-director');
+  const clone = v.cloneNode(true);
+  clone.querySelectorAll('img').forEach(im => {
+    const s = im.getAttribute('src') || '';
+    if (s.indexOf('data:') === 0) im.setAttribute('src', '');
+  });
+  clone.querySelectorAll('input.swap').forEach(inp => { inp.removeAttribute('data-swapped'); });
+  histStack.push(clone.innerHTML);
+  if (histStack.length > HIST_MAX) histStack.shift();
+  histIdx = histStack.length - 1;
+  updateHistBtns();
+}
+function updateHistBtns() {
+  const u = document.getElementById('histUndo'), r = document.getElementById('histRedo');
+  if (u) u.disabled = histIdx <= 0;
+  if (r) r.disabled = histIdx >= histStack.length - 1;
+}
+function restoreHist(i) {
+  histIdx = i;
+  const v = document.getElementById('view-director');
+  v.innerHTML = histStack[i];
+  v.querySelectorAll('section.beat:not([data-template])').forEach(wireBeat);
+  loadInto(v);
+  syncAll(true);
+  updateHistBtns();
+}
+function undoHist() { if (histIdx > 0) restoreHist(histIdx - 1); }
+function redoHist() { if (histIdx < histStack.length - 1) restoreHist(histIdx + 1); }
+
+function syncAll(skipHist) {
   renumber();
   syncScriptView();
   syncGallery();
   syncFull();
   save();
+  if (!skipHist) pushHist();
 }
 
 // ---- ops ----
@@ -1811,12 +1915,12 @@ function opDel(sid) {
   syncAll();
 }
 
-function newBeatSection(afterSec, titleText) {
+function newBeatSection(afterSec, titleText, fixedSid) {
   const tpl = document.getElementById('dbeat-TEMPLATE');
   const sec = tpl.cloneNode(true);
   sec.removeAttribute('style');
   delete sec.dataset.template;
-  const nid = nextXid();
+  const nid = fixedSid || nextXid();
   sec.id = 'dbeat-' + nid;
   sec.querySelector('.sid').textContent = nid;
   sec.querySelector('.beat-title').textContent = titleText;
@@ -1830,7 +1934,7 @@ function newBeatSection(afterSec, titleText) {
   inp.dataset.img = 'PLACEHOLDER-' + nid;
   sec.querySelector('.ed[data-field="note"]').dataset.img = 'PLACEHOLDER-' + nid;
   sec.querySelector('.ed[data-field="vo"]').innerHTML = '';
-  afterSec.after(sec);
+  if (afterSec) afterSec.after(sec);
   wireBeat(sec);
   loadInto(sec);
   return { sec: sec, nid: nid };
@@ -1936,9 +2040,44 @@ document.getElementById('view-director').addEventListener('dblclick', e => {
   dblEditTitle(t);
 });
 
+function loadStructure(){
+  let d={};try{d=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
+  const order=d['__order'];
+  if(!order||!order.length)return;
+  const xb=d['__xbeats']||{};
+  let maxX=0;
+  order.forEach(sid=>{
+    const m=String(sid).match(/^X(\d+)$/);
+    if(!m)return;
+    maxX=Math.max(maxX,parseInt(m[1],10));
+    if(!document.getElementById('dbeat-'+sid)){
+      const savedTitle=(d[sid]&&d[sid]['__title'])||'New scene';
+      const r=newBeatSection(null,savedTitle,sid);
+      document.getElementById('view-director').appendChild(r.sec);
+      if(xb[sid]){
+        if(xb[sid].aFrom){r.sec.dataset.aFrom=xb[sid].aFrom;r.sec.dataset.aTo=xb[sid].aTo;}
+      }
+    }
+  });
+  if(maxX>=xCounter){
+    xCounter=maxX+1;
+    try{localStorage.setItem('ep002-xcounter',String(xCounter));}catch(e){}
+  }
+  const v=document.getElementById('view-director');
+  const tpl=document.getElementById('dbeat-TEMPLATE');
+  order.forEach(sid=>{
+    const s=document.getElementById('dbeat-'+sid);
+    if(s&&s!==tpl)v.insertBefore(s,tpl);
+  });
+}
 migrateBeats();
+loadStructure();
 load();
 loadChecks();
 syncFullScript();
 markEdited();
+document.getElementById('histUndo').addEventListener('click',undoHist);
+document.getElementById('histRedo').addEventListener('click',redoHist);
+pushHist();
+updateHistBtns();
 </script></body></html>
