@@ -122,7 +122,7 @@ code{background:#14100c;padding:2px 6px;border-radius:4px;font-size:14px}
 </div>
 <audio id="player"></audio>
 </div>
-<header class="top"><h1>EP002 — Episode Command Center <span id="ccver" style="font-size:12px;color:#888">v3.4</span> <span id="savestat" style="font-size:12px" title="Save status">●</span></h1>
+<header class="top"><h1>EP002 — Episode Command Center <span id="ccver" style="font-size:12px;color:#888">v3.5</span> <span id="savestat" style="font-size:12px" title="Save status">●</span></h1>
 <nav class="tabs">
 <button data-view="director" class="active">🎬 Visual Director</button>
 <button data-view="script">📝 Script</button>
@@ -2113,12 +2113,12 @@ function loadStructure(){
     if(s&&s!==tpl)v.insertBefore(s,tpl);
   });
 }
-migrateBeats();
-loadStructure();
-load();
-loadChecks();
-syncFullScript();
-markEdited();
+try{migrateBeats();}catch(e){console.log('migrate err',e);}
+try{loadStructure();}catch(e){console.log('loadStructure err',e);}
+try{load();}catch(e){console.log('load err',e);}
+try{loadChecks();}catch(e){}
+try{syncFullScript();}catch(e){}
+try{markEdited();}catch(e){}
 document.getElementById('histUndo').addEventListener('click',undoHist);
 document.getElementById('histRedo').addEventListener('click',redoHist);
 pushHist();
