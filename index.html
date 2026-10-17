@@ -122,7 +122,7 @@ code{background:#14100c;padding:2px 6px;border-radius:4px;font-size:14px}
 </div>
 <audio id="player"></audio>
 </div>
-<header class="top"><h1>EP002 — Episode Command Center <span id="ccver" style="font-size:12px;color:#888">v3.9</span> <span id="savestat" style="font-size:12px" title="Save status">●</span></h1>
+<header class="top"><h1>EP002 — Episode Command Center <span id="ccver" style="font-size:12px;color:#888">v3.10</span> <span id="savestat" style="font-size:12px" title="Save status">●</span></h1>
 <nav class="tabs">
 <button data-view="director" class="active">🎬 Visual Director</button>
 <button data-view="script">📝 Script</button>
@@ -990,7 +990,7 @@ function paintInsertion(ed,e){
   }catch(err){}
 }
 function wireEd(ed){
-  ed.addEventListener('input',e=>{paintInsertion(ed,e);mirror(ed);save();});
+  ed.addEventListener('input',e=>{paintInsertion(ed,e);mirror(ed);save();queueHist();});
   ed.addEventListener('blur',()=>{if(!ed.textContent.trim())ed.innerHTML='';});
 }
 const player=document.getElementById('player');
@@ -1906,8 +1906,12 @@ function syncFull() {
 // ---- undo/redo for scene structure ----
 let histStack = [], histIdx = -1;
 const HIST_MAX = 50;
+let histTimer = null;
+function queueHist() {
+  if (histTimer) clearTimeout(histTimer);
+  histTimer = setTimeout(() => { histTimer = null; pushHist(); }, 2000);
+}
 function pushHist() {
-  histStack = histStack.slice(0, histIdx + 1);
   const v = document.getElementById('view-director');
   const clone = v.cloneNode(true);
   clone.querySelectorAll('img').forEach(im => {
@@ -1915,7 +1919,10 @@ function pushHist() {
     if (s.indexOf('data:') === 0) im.setAttribute('src', '');
   });
   clone.querySelectorAll('input.swap').forEach(inp => { inp.removeAttribute('data-swapped'); });
-  histStack.push(clone.innerHTML);
+  const snap = clone.innerHTML;
+  if (histStack[histIdx] === snap) return;
+  histStack = histStack.slice(0, histIdx + 1);
+  histStack.push(snap);
   if (histStack.length > HIST_MAX) histStack.shift();
   histIdx = histStack.length - 1;
   updateHistBtns();
@@ -1962,6 +1969,7 @@ function syncAll(skipHist) {
   try{syncGallery();}catch(e){console.log('syncGallery err',e);}
   try{syncFull();}catch(e){console.log('syncFull err',e);}
   try{save();}catch(e){console.log('save err',e);}
+  if (histTimer) { clearTimeout(histTimer); histTimer = null; }
   if (!skipHist) { try{pushHist();}catch(e){console.log('pushHist err',e);} }
 }
 
