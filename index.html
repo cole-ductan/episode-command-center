@@ -122,7 +122,7 @@ code{background:#14100c;padding:2px 6px;border-radius:4px;font-size:14px}
 </div>
 <audio id="player"></audio>
 </div>
-<header class="top"><h1>EP002 — Episode Command Center</h1>
+<header class="top"><h1>EP002 — Episode Command Center <span id="ccver" style="font-size:12px;color:#888">v3.4</span> <span id="savestat" style="font-size:12px" title="Save status">●</span></h1>
 <nav class="tabs">
 <button data-view="director" class="active">🎬 Visual Director</button>
 <button data-view="script">📝 Script</button>
@@ -1432,15 +1432,26 @@ function save(){
     });
     localStorage.setItem(KEY+'-struct',JSON.stringify({order:directorBeats().map(beatSid),xbeats:xb}));
   }catch(e){}
-  try{localStorage.setItem(KEY,JSON.stringify(d));}
+  let ok=false;
+  try{localStorage.setItem(KEY,JSON.stringify(d));ok=true;}
   catch(e){
     try{
       const d2=JSON.parse(JSON.stringify(d));
       Object.keys(d2).forEach(k=>{Object.keys(d2[k]).forEach(f=>{if(f.indexOf('swapped|')===0)delete d2[k][f];});});
-      localStorage.setItem(KEY,JSON.stringify(d2));
-    }catch(e2){}
+      localStorage.setItem(KEY,JSON.stringify(d2));ok=true;
+    }catch(e2){saveFailed();}
   }
   markEdited();
+  try{
+    const ss=document.getElementById('savestat');
+    if(ss){ss.textContent='●';ss.style.color='#4caf50';ss.title='Saved '+new Date().toLocaleTimeString();}
+  }catch(e){}
+}
+function saveFailed(){
+  try{
+    const ss=document.getElementById('savestat');
+    if(ss){ss.textContent='●';ss.style.color='#f44336';ss.title='SAVE FAILED';}
+  }catch(e){}
 }
 function markEdited(){
   document.querySelectorAll('#view-director .beat').forEach(sec=>{
