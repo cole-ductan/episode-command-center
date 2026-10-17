@@ -110,7 +110,7 @@ code{background:#14100c;padding:2px 6px;border-radius:4px;font-size:14px}
 .scenetools{display:inline-flex;gap:4px;margin-left:8px;flex-wrap:wrap}
 .stool{min-width:44px;min-height:44px;font-size:16px;background:#2a241d;color:#ffb;border:1px solid #5a4632;border-radius:8px;cursor:pointer}
 .stool:active{background:#4a3f32}
-</style></head><body>
+</style><style>body.loading .view{opacity:0;}.view{transition:opacity .15s;}</style></head><body class="loading">
 <div id="audiobar">
 <label class="filebtn" id="apLoadBtn">🎧 Load MP3 <input type="file" id="mp3" accept="audio/*" hidden></label>
 <div id="aplayer" hidden>
@@ -122,7 +122,7 @@ code{background:#14100c;padding:2px 6px;border-radius:4px;font-size:14px}
 </div>
 <audio id="player"></audio>
 </div>
-<header class="top"><h1>EP002 — Episode Command Center <span id="ccver" style="font-size:12px;color:#888">v3.8</span> <span id="savestat" style="font-size:12px" title="Save status">●</span></h1>
+<header class="top"><h1>EP002 — Episode Command Center <span id="ccver" style="font-size:12px;color:#888">v3.9</span> <span id="savestat" style="font-size:12px" title="Save status">●</span></h1>
 <nav class="tabs">
 <button data-view="director" class="active">🎬 Visual Director</button>
 <button data-view="script">📝 Script</button>
@@ -1929,8 +1929,27 @@ function restoreHist(i) {
   histIdx = i;
   const v = document.getElementById('view-director');
   v.innerHTML = histStack[i];
-  v.querySelectorAll('section.beat:not([data-template])').forEach(wireBeat);
-  loadInto(v);
+  v.querySelectorAll('section.beat:not([data-template])').forEach(sec=>{
+    wireBeat(sec);
+    const sid=beatSid(sec);
+    if(/^X\d+$/.test(sid)){
+      const img=sec.querySelector('figure img');
+      if(img&&!img.getAttribute('src')){
+        const te=sec.querySelector('.beat-title');
+        try{img.src=makePlaceholder(te?te.textContent:'New scene');}catch(e){}
+      }
+    }
+  });
+  let d={};try{d=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
+  v.querySelectorAll('input.swap').forEach(inp=>{
+    const b=inp.dataset.beat,img=inp.dataset.img,k='swapped|'+img;
+    if(d[b]&&d[b][k]!==undefined){
+      inp.dataset.swapped=d[b][k];
+      const fig=inp.closest('figure');
+      const im=fig?fig.querySelector('img'):null;
+      if(im&&!im.getAttribute('src'))im.src=d[b][k];
+    }
+  });
   syncAll(true);
   updateHistBtns();
 }
@@ -2145,8 +2164,12 @@ try{syncAll(true);}catch(e){console.log('post-load sync err',e);}
 try{loadChecks();}catch(e){}
 try{syncFullScript();}catch(e){}
 try{markEdited();}catch(e){}
-document.getElementById('histUndo').addEventListener('click',undoHist);
-document.getElementById('histRedo').addEventListener('click',redoHist);
+document.addEventListener('click',e=>{
+  if(e.target.closest('#histUndo')){e.preventDefault();undoHist();}
+  if(e.target.closest('#histRedo')){e.preventDefault();redoHist();}
+});
 pushHist();
 updateHistBtns();
+document.body.classList.remove('loading');
+setTimeout(function(){document.body.classList.remove('loading');},3000);
 </script></body></html>
