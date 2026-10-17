@@ -1418,14 +1418,17 @@ function save(){
     const sid=sec.id.replace('dbeat-','');
     d[sid]=d[sid]||{};d[sid]['__title']=t.textContent;
   });
-  d['__order']=directorBeats().map(beatSid);
-  d['__xbeats']={};
-  directorBeats().forEach(sec=>{
-    const sid=beatSid(sec);
-    if(/^X\d+$/.test(sid)){
-      d['__xbeats'][sid]={aFrom:sec.dataset.aFrom||'',aTo:sec.dataset.aTo||''};
-    }
-  });
+  try{
+    const xb={};
+    directorBeats().forEach(sec=>{
+      const sid=beatSid(sec);
+      if(/^X\d+$/.test(sid)){
+        const te=sec.querySelector('.beat-title');
+        xb[sid]={aFrom:sec.dataset.aFrom||'',aTo:sec.dataset.aTo||'',title:te?te.textContent:''};
+      }
+    });
+    localStorage.setItem(KEY+'-struct',JSON.stringify({order:directorBeats().map(beatSid),xbeats:xb}));
+  }catch(e){}
   try{localStorage.setItem(KEY,JSON.stringify(d));}catch(e){}
   markEdited();
 }
@@ -2041,17 +2044,18 @@ document.getElementById('view-director').addEventListener('dblclick', e => {
 });
 
 function loadStructure(){
+  let st={};try{st=JSON.parse(localStorage.getItem(KEY+'-struct')||'{}');}catch(e){}
   let d={};try{d=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
-  const order=d['__order'];
+  const order=st['order'];
   if(!order||!order.length)return;
-  const xb=d['__xbeats']||{};
+  const xb=st['xbeats']||{};
   let maxX=0;
   order.forEach(sid=>{
     const m=String(sid).match(/^X(\d+)$/);
     if(!m)return;
     maxX=Math.max(maxX,parseInt(m[1],10));
     if(!document.getElementById('dbeat-'+sid)){
-      const savedTitle=(d[sid]&&d[sid]['__title'])||'New scene';
+      const savedTitle=(d[sid]&&d[sid]['__title'])||(xb[sid]&&xb[sid].title)||'New scene';
       const r=newBeatSection(null,savedTitle,sid);
       document.getElementById('view-director').appendChild(r.sec);
       if(xb[sid]){
