@@ -1321,19 +1321,20 @@ document.getElementById('lbSwap').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f||!lbFname)return;
   const r=new FileReader();
   r.onload=()=>{
-    const url=r.result;
-    document.getElementById('lbImg').src=url;
-    document.querySelectorAll('#view-gallery .cell').forEach(c=>{
-      if(c.dataset.fname===lbFname){const im=c.querySelector('img');if(im)im.src=url;c.dataset.full=url;}
+    downscaleDataUrl(r.result,560,(url)=>{
+      document.getElementById('lbImg').src=url;
+      document.querySelectorAll('#view-gallery .cell').forEach(c=>{
+        if(c.dataset.fname===lbFname){const im=c.querySelector('img');if(im)im.src=url;c.dataset.full=url;}
+      });
+      document.querySelectorAll('#view-director figure').forEach(fig=>{
+        if(fig.dataset.img===lbFname){
+          const im=fig.querySelector('img'); if(im)im.src=url;
+          const inp=fig.querySelector('input.swap'); if(inp)inp.dataset.swapped=url;
+        }
+      });
+      save();
+      e.target.value='';
     });
-    document.querySelectorAll('#view-director figure').forEach(fig=>{
-      if(fig.dataset.img===lbFname){
-        const im=fig.querySelector('img'); if(im)im.src=url;
-        const inp=fig.querySelector('input.swap'); if(inp)inp.dataset.swapped=url;
-      }
-    });
-    save();
-    e.target.value='';
   };
   r.readAsDataURL(f);
 });
@@ -1359,11 +1360,13 @@ document.querySelectorAll('input.swap').forEach(inp=>inp.addEventListener('chang
   const f=e.target.files[0]; if(!f)return;
   const r=new FileReader();
   r.onload=()=>{
-    const fig=inp.closest('figure');
-    let im=fig.querySelector('img');
-    if(im){im.src=r.result;}
-    else{const ph=fig.querySelector('.ph'); if(ph){im=document.createElement('img');im.alt='uploaded';ph.replaceWith(im);im.src=r.result;}}
-    inp.dataset.swapped=r.result;save();syncGallery();
+    downscaleDataUrl(r.result,560,(url)=>{
+      const fig=inp.closest('figure');
+      let im=fig.querySelector('img');
+      if(im){im.src=url;}
+      else{const ph=fig.querySelector('.ph'); if(ph){im=document.createElement('img');im.alt='uploaded';ph.replaceWith(im);im.src=url;}}
+      inp.dataset.swapped=url;save();syncGallery();
+    });
   };
   r.readAsDataURL(f);
 }));
@@ -1429,7 +1432,14 @@ function save(){
     });
     localStorage.setItem(KEY+'-struct',JSON.stringify({order:directorBeats().map(beatSid),xbeats:xb}));
   }catch(e){}
-  try{localStorage.setItem(KEY,JSON.stringify(d));}catch(e){}
+  try{localStorage.setItem(KEY,JSON.stringify(d));}
+  catch(e){
+    try{
+      const d2=JSON.parse(JSON.stringify(d));
+      Object.keys(d2).forEach(k=>{Object.keys(d2[k]).forEach(f=>{if(f.indexOf('swapped|')===0)delete d2[k][f];});});
+      localStorage.setItem(KEY,JSON.stringify(d2));
+    }catch(e2){}
+  }
   markEdited();
 }
 function markEdited(){
@@ -1686,6 +1696,22 @@ function previewFrom(sid) {
 }
 
 // ---- wiring for dynamically added beats (mirrors the load-time bindings) ----
+function downscaleDataUrl(dataUrl, maxW, cb) {
+  const img = new Image();
+  img.onload = () => {
+    const s = Math.min(1, maxW / img.width);
+    if (s >= 1) { cb(dataUrl); return; }
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(img.width * s));
+    c.height = Math.max(1, Math.round(img.height * s));
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    let out = dataUrl;
+    try { out = c.toDataURL('image/jpeg', 0.85); } catch (e) {}
+    cb(out);
+  };
+  img.onerror = () => cb(dataUrl);
+  img.src = dataUrl;
+}
 function wireBeat(sec) {
   sec.querySelectorAll('.ed').forEach(wireEd);
   sec.querySelectorAll('.sbtn').forEach(b => {
@@ -1701,12 +1727,14 @@ function wireBeat(sec) {
     if (!f) return;
     const r = new FileReader();
     r.onload = () => {
-      const fig = inp.closest('figure');
-      const im = fig.querySelector('img');
-      if (im) im.src = r.result;
-      inp.dataset.swapped = r.result;
-      save();
-      syncGallery();
+      downscaleDataUrl(r.result, 560, (url) => {
+        const fig = inp.closest('figure');
+        const im = fig.querySelector('img');
+        if (im) im.src = url;
+        inp.dataset.swapped = url;
+        save();
+        syncGallery();
+      });
     };
     r.readAsDataURL(f);
   }));
