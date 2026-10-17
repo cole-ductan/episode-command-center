@@ -122,7 +122,7 @@ code{background:#14100c;padding:2px 6px;border-radius:4px;font-size:14px}
 </div>
 <audio id="player"></audio>
 </div>
-<header class="top"><h1>EP002 — Episode Command Center <span id="ccver" style="font-size:12px;color:#888">v3.6</span> <span id="savestat" style="font-size:12px" title="Save status">●</span></h1>
+<header class="top"><h1>EP002 — Episode Command Center <span id="ccver" style="font-size:12px;color:#888">v3.7</span> <span id="savestat" style="font-size:12px" title="Save status">●</span></h1>
 <nav class="tabs">
 <button data-view="director" class="active">🎬 Visual Director</button>
 <button data-view="script">📝 Script</button>
@@ -1936,12 +1936,12 @@ function undoHist() { if (histIdx > 0) restoreHist(histIdx - 1); }
 function redoHist() { if (histIdx < histStack.length - 1) restoreHist(histIdx + 1); }
 
 function syncAll(skipHist) {
-  renumber();
-  syncScriptView();
-  syncGallery();
-  syncFull();
-  save();
-  if (!skipHist) pushHist();
+  try{renumber();}catch(e){console.log('renumber err',e);}
+  try{syncScriptView();}catch(e){console.log('syncScript err',e);}
+  try{syncGallery();}catch(e){console.log('syncGallery err',e);}
+  try{syncFull();}catch(e){console.log('syncFull err',e);}
+  try{save();}catch(e){console.log('save err',e);}
+  if (!skipHist) { try{pushHist();}catch(e){console.log('pushHist err',e);} }
 }
 
 // ---- ops ----
